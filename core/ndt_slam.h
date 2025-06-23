@@ -26,14 +26,17 @@ class NDTSLAM {
   void Update(const PointCloud& point_cloud);
 
  private:
-  void InitializeMap(const Pose2& initial_pose, const PointCloud& point_cloud);
+  void UpdateMap(const Pose2& global_pose, const PointCloud& point_cloud);
   std::vector<VoxelIndex> ComputeMissVoxelIndices(const Pose2& global_pose,
                                                   const Vec2& global_point);
   bool OptimizePose(const std::vector<Vec2>& points, Pose2* pose);
 
   VoxelIndex ComputeVoxelIndex(const Vec2& point) const;
+  VoxelIndex ComputeVoxelIndex(const VoxelIndex& fine_voxel_index) const;
+  VoxelIndex ComputeSubVoxelIndex(const Vec2& point) const;
 
   const Parameters parameters_;
+  double fine_voxel_size_{0.0};
 
   VoxelMap voxel_map_;
   VoxelOccupancyMap voxel_occupancy_map_;
