@@ -23,10 +23,12 @@ struct PointCloud {
   std::vector<Vec2> data;
 };
 
-using VoxelIndex = Vec2i;
+using CoarseVoxelIndex = Vec2i;
+using FineVoxelIndex = Vec2i;
+using LocalIndex = Vec2i;
 
 struct VoxelIndexHash {
-  uint64_t operator()(const VoxelIndex& index) const {
+  uint64_t operator()(const CoarseVoxelIndex& index) const {
     // Morton order hash function
     const int x_key = index.x() < 0 ? -2 * index.x() - 1 : 2 * index.x();
     const int y_key = index.y() < 0 ? -2 * index.y() - 1 : 2 * index.y();
@@ -54,8 +56,8 @@ struct Voxel {
   std::unordered_map<uint64_t, SubVoxel> sub_voxels;
 };
 
-using VoxelMap = std::unordered_map<VoxelIndex, Voxel, VoxelIndexHash>;
+using VoxelMap = std::unordered_map<CoarseVoxelIndex, Voxel, VoxelIndexHash>;
 using VoxelOccupancyMap =
-    std::unordered_map<VoxelIndex, uint8_t, VoxelIndexHash>;
+    std::unordered_map<FineVoxelIndex, uint8_t, VoxelIndexHash>;
 
 #endif  // TYPES_H_

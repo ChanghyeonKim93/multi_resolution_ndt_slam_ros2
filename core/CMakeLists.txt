@@ -38,3 +38,6 @@ install(
   DESTINATION include # /usr/local/include
   FILES_MATCHING
   PATTERN "*.h")
+
+add_executable(test test.cc ${SRC} ${SRC_UTILITY})
+target_link_libraries(test ${Eigen3_LIBRARIES} ${CERES_LIBRARIES})

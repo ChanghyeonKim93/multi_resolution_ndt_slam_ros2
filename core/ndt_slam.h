@@ -25,15 +25,17 @@ class NDTSLAM {
 
   void Update(const PointCloud& point_cloud);
 
+  CoarseVoxelIndex GetCoarseIndex(const Vec2& point) const;
+  CoarseVoxelIndex GetCoarseVoxelIndex(
+      const FineVoxelIndex& fine_voxel_index) const;
+  LocalIndex GetLocalIndex(const FineVoxelIndex& fine_voxel_index) const;
+  CoarseVoxelIndex GetFineIndex(const Vec2& point) const;
+
  private:
   void UpdateMap(const Pose2& global_pose, const PointCloud& point_cloud);
-  std::vector<VoxelIndex> ComputeMissVoxelIndices(const Pose2& global_pose,
-                                                  const Vec2& global_point);
+  std::vector<CoarseVoxelIndex> ComputeMissVoxelIndices(
+      const Pose2& global_pose, const Vec2& global_point);
   bool OptimizePose(const std::vector<Vec2>& points, Pose2* pose);
-
-  VoxelIndex ComputeVoxelIndex(const Vec2& point) const;
-  VoxelIndex ComputeVoxelIndex(const VoxelIndex& fine_voxel_index) const;
-  VoxelIndex ComputeSubVoxelIndex(const Vec2& point) const;
 
   const Parameters parameters_;
   double fine_voxel_size_{0.0};

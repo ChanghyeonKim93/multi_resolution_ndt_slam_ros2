@@ -25,15 +25,15 @@ void NDTSLAM::Update(const PointCloud& point_cloud) {
 
 void NDTSLAM::UpdateMap(const Pose2& initial_pose,
                         const PointCloud& point_cloud) {
-  static std::unordered_set<VoxelIndex, VoxelIndexHash> hit_subindex_set;
-  static std::unordered_set<VoxelIndex, VoxelIndexHash> miss_subindex_set;
+  static std::unordered_set<CoarseVoxelIndex, VoxelIndexHash> hit_subindex_set;
+  static std::unordered_set<CoarseVoxelIndex, VoxelIndexHash> miss_subindex_set;
   hit_subindex_set.clear();
   miss_subindex_set.clear();
 
   for (const auto& point : point_cloud.data) {
     const auto global_point = initial_pose * point;
 
-    const auto hit_subindex = ComputeSubVoxelIndex(global_point);
+    const auto hit_subindex = GetFineIndex(global_point);
     hit_subindex_set.insert(hit_subindex);
     const auto miss_subindices =
         ComputeMissVoxelIndices(initial_pose, global_point);
@@ -42,7 +42,7 @@ void NDTSLAM::UpdateMap(const Pose2& initial_pose,
   }
 
   for (const auto& hit_subindex : hit_subindex_set) {
-    const auto hit_index = ComputeVoxelIndex(hit_subindex);
+    const auto hit_index = GetCoarseVoxelIndex(hit_subindex);
     if (voxel_occupancy_map_.find(hit_index) == voxel_occupancy_map_.end())
       voxel_occupancy_map_.insert({hit_index, 128});
 
@@ -79,22 +79,22 @@ void NDTSLAM::UpdateMap(const Pose2& initial_pose,
       voxel_map_.erase(voxel_index);
     }
   }
+
   // Remove empty voxels
-  for (auto it = voxel_occupancy_map_.begin();
-       it != voxel_occupancy_map_.end();) {
-    if (it->second < kMinOccupancy) {
-      it = voxel_occupancy_map_.erase(it);
-      voxel_map_.erase(it->first);
-    } else {
-      ++it;
-    }
+  std::vector<CoarseVoxelIndex> empty_voxel_indices;
+  for (const auto& [voxel_index, occupancy] : voxel_occupancy_map_) {
+    if (occupancy < kMinOccupancy) empty_voxel_indices.push_back(voxel_index);
+  }
+  for (const auto& voxel_index : empty_voxel_indices) {
+    voxel_occupancy_map_.erase(voxel_index);
+    voxel_map_.erase(voxel_index);
   }
 }
 
-std::vector<VoxelIndex> NDTSLAM::ComputeMissVoxelIndices(
+std::vector<CoarseVoxelIndex> NDTSLAM::ComputeMissVoxelIndices(
     const Pose2& global_pose, const Vec2& global_point) {
-  auto current_index = ComputeSubVoxelIndex(global_pose.translation());
-  const auto end_index = ComputeSubVoxelIndex(global_point);
+  auto current_index = GetFineIndex(global_pose.translation());
+  const auto end_index = GetFineIndex(global_point);
 
   Vec2 direction_vector = global_point - global_pose.translation();
   double remaining_distance = direction_vector.norm();
@@ -111,7 +111,7 @@ std::vector<VoxelIndex> NDTSLAM::ComputeMissVoxelIndices(
                     ? kMaxDouble
                     : fine_voxel_size_ / direction_vector[i];
   }
-  std::vector<VoxelIndex> miss_voxel_indices;
+  std::vector<CoarseVoxelIndex> miss_voxel_indices;
   while (remaining_distance > 0.0) {
     int axis = tMax[0] < tMax[1] ? 0 : 1;
     tMax[axis] += tDelta[axis];
@@ -123,24 +123,34 @@ std::vector<VoxelIndex> NDTSLAM::ComputeMissVoxelIndices(
   return miss_voxel_indices;
 }
 
-VoxelIndex NDTSLAM::ComputeVoxelIndex(const Vec2& global_point) const {
+CoarseVoxelIndex NDTSLAM::GetCoarseIndex(const Vec2& global_point) const {
   const double inverse_voxel_size = 1.0 / parameters_.voxel_size;
   return Vec2i(
       static_cast<int>(std::floor(global_point.x() * inverse_voxel_size)),
       static_cast<int>(std::floor(global_point.y() * inverse_voxel_size)));
 }
 
-VoxelIndex NDTSLAM::ComputeSubVoxelIndex(const Vec2& global_point) const {
-  const double inverse_sub_voxel_size = 1.0 / fine_voxel_size_;
+CoarseVoxelIndex NDTSLAM::GetFineIndex(const Vec2& global_point) const {
+  const double inverse_fine_voxel_size = 1.0 / fine_voxel_size_;
   return Vec2i(
-      static_cast<int>(std::floor(global_point.x() * inverse_sub_voxel_size)),
-      static_cast<int>(std::floor(global_point.y() * inverse_sub_voxel_size)));
+      static_cast<int>(std::floor(global_point.x() * inverse_fine_voxel_size)),
+      static_cast<int>(std::floor(global_point.y() * inverse_fine_voxel_size)));
 }
 
-VoxelIndex NDTSLAM::ComputeVoxelIndex(
-    const VoxelIndex& fine_voxel_index) const {
-  return Vec2i(fine_voxel_index.x() / (1 <<.quadtree.max_depth),
-               fine_voxel_index.y() / (1 << parameters_.quadtree.max_depth));
+CoarseVoxelIndex NDTSLAM::GetCoarseVoxelIndex(
+    const FineVoxelIndex& fine_voxel_index) const {
+  static int denominator = 1 << parameters_.quadtree.max_depth;
+  const Vec2i coarse_voxel_index(fine_voxel_index.x() / denominator,
+                                 fine_voxel_index.y() / denominator);
+  return coarse_voxel_index;
+}
+
+LocalIndex NDTSLAM::GetLocalIndex(
+    const FineVoxelIndex& fine_voxel_index) const {
+  static int denominator = 1 << parameters_.quadtree.max_depth;
+  const Vec2i local_index(fine_voxel_index.x() % denominator,
+                          fine_voxel_index.y() % denominator);
+  return local_index;
 }
 
 }  // namespace ndt_slam
