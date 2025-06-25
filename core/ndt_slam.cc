@@ -145,7 +145,7 @@ CoarseVoxelIndex NDTSLAM::GetCoarseVoxelIndex(
   return coarse_voxel_index;
 }
 
-LocalIndex NDTSLAM::GetLocalIndex(
+LocalIndex NDTSLAM::GetLocalIndexInCoarseVoxel(
     const FineVoxelIndex& fine_voxel_index) const {
   static int denominator = 1 << parameters_.quadtree.max_depth;
   const Vec2i local_index(fine_voxel_index.x() % denominator,

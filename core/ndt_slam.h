@@ -28,7 +28,8 @@ class NDTSLAM {
   CoarseVoxelIndex GetCoarseIndex(const Vec2& point) const;
   CoarseVoxelIndex GetCoarseVoxelIndex(
       const FineVoxelIndex& fine_voxel_index) const;
-  LocalIndex GetLocalIndex(const FineVoxelIndex& fine_voxel_index) const;
+  LocalIndex GetLocalIndexInCoarseVoxel(
+      const FineVoxelIndex& fine_voxel_index) const;
   CoarseVoxelIndex GetFineIndex(const Vec2& point) const;
 
  private:

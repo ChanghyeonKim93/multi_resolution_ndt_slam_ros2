@@ -22,7 +22,7 @@ int main(int argc, char** argv) {
 
   const auto cidx2 = ndt_slam.GetCoarseIndex(p2);
   const auto fidx2 = ndt_slam.GetFineIndex(p2);
-  const auto lidx2 = ndt_slam.GetLocalIndex(fidx2);
+  const auto lidx2 = ndt_slam.GetLocalIndexInCoarseVoxel(fidx2);
   std::cerr << "Coarse Voxel Index: (" << cidx2.x() << ", " << cidx2.y()
             << ")\n";
   std::cerr << "Fine Voxel Index: (" << fidx2.x() << ", " << fidx2.y() << ")\n";
